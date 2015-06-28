@@ -152,6 +152,12 @@ unsigned int reset_devices;
 EXPORT_SYMBOL(reset_devices);
 
 /*
+ * Silly extra flag to print a custom message at boot
+ */
+unsigned int print_me;
+EXPORT_SYMBOL(print_me);
+
+/*
  * Setup routine for controlling SMP activation
  *
  * Command-line option of "nosmp" or "maxcpus=0" will disable SMP
@@ -184,6 +190,15 @@ static int __init set_reset_devices(char *str)
 }
 
 __setup("reset_devices", set_reset_devices);
+
+static int __init set_print_me(char *str)
+{
+        print_me = 1;
+        printk("Hello World from Dave!\n");
+        return 1;
+}
+
+__setup("print_me", set_print_me);
 
 static char * argv_init[MAX_INIT_ARGS+2] = { "init", NULL, };
 char * envp_init[MAX_INIT_ENVS+2] = { "HOME=/", "TERM=linux", NULL, };
