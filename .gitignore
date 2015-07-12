@@ -3,7 +3,11 @@
 
 # except...
 !.gitignore
-!.c
+!*.c
+!*.h
 
 # even in subdirectories
 !*/
+
+# but still ignore .mod.c
+*.mod.c

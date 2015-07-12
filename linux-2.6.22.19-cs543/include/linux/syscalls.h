@@ -66,6 +66,15 @@ struct getcpu_cache;
 #include <linux/quota.h>
 #include <linux/key.h>
 
+/**
+ * Custom calls as defined in kernel/custom_syscalls.c
+ */
+
+
+asmlinkage long sys_mygetpid(void);
+
+/******************/
+
 asmlinkage long sys_time(time_t __user *tloc);
 asmlinkage long sys_stime(time_t __user *tptr);
 asmlinkage long sys_gettimeofday(struct timeval __user *tv,
