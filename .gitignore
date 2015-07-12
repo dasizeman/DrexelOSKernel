@@ -9,5 +9,6 @@
 # even in subdirectories
 !*/
 
-# but still ignore .mod.c
+# but still ignore these
 *.mod.c
+*.check.*
