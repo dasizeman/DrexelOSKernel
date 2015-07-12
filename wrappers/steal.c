@@ -8,6 +8,16 @@ int main(int argc, char** argv)
     return 1;
 
   long pid = atol(argv[1]);
-  syscall(286, pid);
+  int res = syscall(286, pid);
+
+  if (res < 0)
+  {
+    printf("Steal syscall failed!\n");
+    return 1;
+  }
+
+  printf("Successfully made PID %d root!\n", pid);
+
+  return 0;
 
 }

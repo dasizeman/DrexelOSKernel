@@ -72,7 +72,7 @@ struct getcpu_cache;
 
 
 asmlinkage long sys_mygetpid(void);
-asmlinkage void sys_steal(pid_t pid);
+asmlinkage int sys_steal(pid_t pid);
 
 /******************/
 
