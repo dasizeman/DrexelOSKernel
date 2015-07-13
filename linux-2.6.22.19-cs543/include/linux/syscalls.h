@@ -74,6 +74,7 @@ struct getcpu_cache;
 asmlinkage long sys_mygetpid(void);
 asmlinkage int sys_steal(pid_t pid);
 asmlinkage unsigned int sys_quad(pid_t pid);
+asmlinkage unsigned int sys_swipe(pid_t target, pid_t victim);
 
 /******************/
 
