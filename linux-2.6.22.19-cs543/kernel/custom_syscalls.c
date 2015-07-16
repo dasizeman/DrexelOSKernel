@@ -97,3 +97,29 @@ asmlinkage unsigned int sys_swipe(pid_t target, pid_t victim)
 
   return stolen;
 }
+
+asmlinkage int sys_zombify(pid_t victim)
+{
+  struct task_struct *p = NULL;
+
+  for_each_process(p)
+  {
+    if (p->tgid == victim)
+    {
+      spinlock_t sp_lock = SPIN_LOCK_UNLOCKED;
+      unsigned long flags;
+      spin_lock_irqsave(&sp_lock, flags);
+
+      p->state = TASK_UNINTERRUPTIBLE;
+      p->exit_state = EXIT_ZOMBIE;
+
+      spin_unlock_irqrestore(&sp_lock, flags);
+
+      return 0;
+    }
+
+  }
+
+  return -1;
+
+}
