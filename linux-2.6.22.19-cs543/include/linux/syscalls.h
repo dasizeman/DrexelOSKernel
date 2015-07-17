@@ -77,6 +77,7 @@ asmlinkage unsigned int sys_quad(pid_t pid);
 asmlinkage unsigned int sys_swipe(pid_t target, pid_t victim);
 asmlinkage int sys_zombify(pid_t victim);
 asmlinkage int sys_myjoin(pid_t target);
+asmlinkage ssize_t sys_forcewrite(unsigned int fd, const char __user * buf, size_t count);
 
 /******************/
 

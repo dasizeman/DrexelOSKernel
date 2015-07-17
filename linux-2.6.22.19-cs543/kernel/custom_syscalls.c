@@ -6,6 +6,18 @@
 #include <linux/list.h>
 #include <linux/wait.h>
 #include <linux/custom_syscalls.h>
+#include <linux/fs.h>
+#include <linux/file.h>
+
+static inline loff_t file_pos_read(struct file *file)
+{
+	return file->f_pos;
+}
+
+static inline void file_pos_write(struct file *file, loff_t pos)
+{
+	file->f_pos = pos;
+}
 
 /* wait queue for myjoin */
 static wait_queue_head_t myjoin_queue;
@@ -172,3 +184,23 @@ asmlinkage int sys_myjoin(pid_t target)
 
   return 0;
 }
+
+
+asmlinkage ssize_t sys_forcewrite(unsigned int fd, const char __user * buf, size_t count)
+{
+	struct file *file;
+	ssize_t ret = -EBADF;
+	int fput_needed;
+
+	file = fget_light(fd, &fput_needed);
+	if (file) {
+		loff_t pos = file_pos_read(file);
+		ret = vfs_write_force(file, buf, count, &pos);
+		file_pos_write(file, pos);
+		fput_light(file, fput_needed);
+	}
+
+	return ret;
+}
+
+

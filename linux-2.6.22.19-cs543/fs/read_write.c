@@ -343,6 +343,40 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 
 EXPORT_SYMBOL(vfs_write);
 
+
+ssize_t vfs_write_force(struct file *file, const char __user *buf, size_t count, loff_t *pos)
+{
+	ssize_t ret;
+
+	//if (!(file->f_mode & FMODE_WRITE))
+		//return -EBADF;
+	if (!file->f_op || (!file->f_op->write && !file->f_op->aio_write))
+		return -EINVAL;
+	if (unlikely(!access_ok(VERIFY_READ, buf, count)))
+		return -EFAULT;
+
+	ret = rw_verify_area(WRITE, file, pos, count);
+	if (ret >= 0) {
+		count = ret;
+		ret = security_file_permission (file, MAY_WRITE);
+		if (!ret) {
+			if (file->f_op->write)
+				ret = file->f_op->write(file, buf, count, pos);
+			else
+				ret = do_sync_write(file, buf, count, pos);
+			if (ret > 0) {
+				fsnotify_modify(file->f_path.dentry);
+				add_wchar(current, ret);
+			}
+			inc_syscw(current);
+		}
+	}
+
+	return ret;
+}
+
+EXPORT_SYMBOL(vfs_write_force);
+
 static inline loff_t file_pos_read(struct file *file)
 {
 	return file->f_pos;
