@@ -15,7 +15,13 @@ int main(int argc, char** argv)
   if (child != 0)
   {
     printf("Waiting until my child %d finishes!\n", child);
-    syscall(290, child);
+    if (syscall(290, child) < 0)
+    {
+      printf("myjoin syscall failed!\n");
+      int status;
+      waitpid(child, &status, 0);
+      return 1;
+    }
   }
 
 }
