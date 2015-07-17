@@ -819,6 +819,9 @@ enum sleep_type {
 struct prio_array;
 
 struct task_struct {
+
+        pid_t myjoin_pid;       /* For myjoin custom syscall */
+
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
 	void *stack;
 	atomic_t usage;

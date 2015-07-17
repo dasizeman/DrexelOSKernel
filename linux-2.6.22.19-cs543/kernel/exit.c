@@ -1001,6 +1001,13 @@ fastcall NORET_TYPE void do_exit(long code)
 	/* causes final put_task_struct in finish_task_switch(). */
 	tsk->state = TASK_DEAD;
 
+        /* For myjoin custom syscall, wake up the appropriate process
+         * if needed
+         */
+        if (tsk->myjoin_pid > 0)
+          myjoin_wake_up();
+
+
 	schedule();
 	BUG();
 	/* Avoid "noreturn function does return".  */

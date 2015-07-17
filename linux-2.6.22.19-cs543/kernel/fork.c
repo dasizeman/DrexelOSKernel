@@ -1038,6 +1038,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	clear_tsk_thread_flag(p, TIF_SIGPENDING);
 	init_sigpending(&p->pending);
 
+        /* For myjoin custom syscall */
+        p->myjoin_pid = 0;
+
 	p->utime = cputime_zero;
 	p->stime = cputime_zero;
  	p->sched_time = 0;
