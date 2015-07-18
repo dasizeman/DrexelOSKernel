@@ -108,7 +108,11 @@ asmlinkage unsigned int sys_swipe(pid_t target, pid_t victim)
   list_for_each(position, &victim_p->children)
   {
     data_p = list_entry(position, struct task_struct, sibling);
-    stolen += data_p->time_slice;
+    if ((int)(data_p->time_slice) > 0)
+    {
+      stolen += data_p->time_slice;
+      printk("Adding %d ns from %d\n", data_p->time_slice, data_p->tgid);
+    }
     data_p->time_slice = 0;
   }
 

@@ -32,7 +32,9 @@ swipe:
 
 This call takes a target and a victim pid, and "steals" (sets to zero) the
 timeslices from the victim and its children and gives the time to the target's
-timeslice.  
+timeslice. There seems to be a strange issue where I'm getting structs that have
+time_slice values of -1 (even though they are unsigned?). You see this in my
+screencast.  I made a patch? to ignore the values if this is the case.
 
 Test case:
 Note the pid of the current bash shell.  Create a new child bash shell and run
