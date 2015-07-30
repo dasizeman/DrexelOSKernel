@@ -13,6 +13,9 @@ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o profile.o \
 # Build custom syscalls
 obj-y += custom_syscalls.o
 
+# Build kernel mailbox module
+obj-y += kmailbox.o
+
 obj-$(CONFIG_STACKTRACE) += stacktrace.o
 obj-y += time/
 obj-$(CONFIG_DEBUG_MUTEXES) += mutex-debug.o
