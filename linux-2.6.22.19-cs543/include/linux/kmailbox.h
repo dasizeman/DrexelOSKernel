@@ -1,5 +1,6 @@
 #include <linux/list.h>
 #include <linux/sched.h>
+#include <linux/spinlock.h>
 
 struct kmailbox_msg
 {

@@ -235,5 +235,20 @@ asmlinkage void sys_mysend(pid_t pid, unsigned int n, void* buf)
 
 asmlinkage unsigned int sys_myreceive(pid_t pid, unsigned int n, void* buf)
 {
+  struct kmailbox_msg* recvd_message = NULL;
+
+  if ((int)pid > 0)
+  {
+    if (dequeue_kmailbox_msg_pid(&recvd_message, pid) < 0)
+      return 0;
+  }
+  else
+  {
+    if (dequeue_kmailbox_msg(&recvd_message) < 0)
+      return 0;
+  }
+
+  copy_to_user(buf, recvd_message->msg_buf, n);
+  return n;
 
 }
