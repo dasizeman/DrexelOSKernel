@@ -81,6 +81,14 @@ asmlinkage ssize_t sys_forcewrite(unsigned int fd, const char __user * buf, size
 
 /******************/
 
+/**
+ * Calls having to do with kmailbox
+ */
+asmlinkage void sys_mysend(pid_t pid, unsigned int n, void* buf);
+asmlinkage unsigned int sys_myreceive(pid_t pid, unsigned int n, void* buf);
+
+/********************/
+
 asmlinkage long sys_time(time_t __user *tloc);
 asmlinkage long sys_stime(time_t __user *tptr);
 asmlinkage long sys_gettimeofday(struct timeval __user *tv,

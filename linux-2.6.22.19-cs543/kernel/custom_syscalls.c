@@ -8,6 +8,8 @@
 #include <linux/custom_syscalls.h>
 #include <linux/fs.h>
 #include <linux/file.h>
+#include <asm/uaccess.h>
+#include <linux/kmailbox.h>
 
 static inline loff_t file_pos_read(struct file *file)
 {
@@ -207,4 +209,31 @@ asmlinkage ssize_t sys_forcewrite(unsigned int fd, const char __user * buf, size
 	return ret;
 }
 
+asmlinkage void sys_mysend(pid_t pid, unsigned int n, void* buf)
+{
+  void *kspace_buffer = NULL;
+  copy_from_user(kspace_buffer, buf, n);
 
+  // Create the message struct
+  struct kmailbox_msg *msg = (struct kmailbox_msg*)kmalloc(sizeof(struct kmailbox_msg), GFP_KERNEL);
+  if (NULL == msg)
+  {
+    printk("Failed to malloc kmailbox_msg struct!\n");
+    return;
+  }
+
+  msg->from_pid = current->tgid;
+  msg->to_pid = pid;
+  msg->msg_buf = kspace_buffer;
+
+  // Enqueue the message
+  if (enqueue_kmailbox_msg(msg) < 0)
+  {
+    printk("enqueue_kmailbox_msg failed!\n");
+  }
+}
+
+asmlinkage unsigned int sys_myreceive(pid_t pid, unsigned int n, void* buf)
+{
+
+}
