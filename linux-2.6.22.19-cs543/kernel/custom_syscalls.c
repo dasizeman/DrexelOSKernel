@@ -211,8 +211,10 @@ asmlinkage ssize_t sys_forcewrite(unsigned int fd, const char __user * buf, size
 
 asmlinkage void sys_mysend(pid_t pid, unsigned int n, void* buf)
 {
-  void *kspace_buffer = NULL;
+  void *kspace_buffer = kmalloc(n, GFP_KERNEL);
+  printk("Buffer before copy to kernel: %s\n", buf);
   copy_from_user(kspace_buffer, buf, n);
+  printk("Kspace buffer: %s\n", kspace_buffer);
 
   // Create the message struct
   struct kmailbox_msg *msg = (struct kmailbox_msg*)kmalloc(sizeof(struct kmailbox_msg), GFP_KERNEL);

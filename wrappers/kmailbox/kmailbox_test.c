@@ -17,8 +17,9 @@ int main(int argc, char** argv)
     char *recvstring = (char*)malloc(100);
     int res;
     res = myreceive(-1, strlen(str), recvstring);
-    //printf("%s\n", recvstring);
     printf("Tried myreceive, got %d\n", res);
+    if (res > 0)
+      printf("%s\n", recvstring);
   }
   else
   {

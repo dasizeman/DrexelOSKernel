@@ -9,6 +9,10 @@ int enqueue_kmailbox_msg(struct kmailbox_msg *msg)
 
   unsigned long flags;
   spin_lock_irqsave(&sp_lock, flags);
+  printk("Enqueueing:\n");
+  printk("from_pid: %d\n", msg->from_pid);
+  printk("to_pid: %d\n", msg->to_pid);
+  printk("message: %s\n", msg->msg_buf);
 
   if (!msg)
   {
@@ -27,7 +31,7 @@ int dequeue_kmailbox_msg(struct kmailbox_msg **msg)
   unsigned long flags;
   spin_lock_irqsave(&sp_lock, flags);
 
-  if (!kmailbox_queue.next)
+  if (kmailbox_queue.next == &kmailbox_queue)
   {
     spin_unlock_irqrestore(&sp_lock,flags);
     return -1;
@@ -35,6 +39,11 @@ int dequeue_kmailbox_msg(struct kmailbox_msg **msg)
   struct list_head *to_remove = NULL;
   to_remove = kmailbox_queue.next;
   *msg = list_entry(to_remove, struct kmailbox_msg, msg_queue);
+
+  printk("Dequeueing:\n");
+  printk("from_pid: %d\n", (*msg)->from_pid);
+  printk("to_pid: %d\n", (*msg)->to_pid);
+  printk("message: %s\n", (*msg)->msg_buf);
 
   list_del(to_remove);
 
