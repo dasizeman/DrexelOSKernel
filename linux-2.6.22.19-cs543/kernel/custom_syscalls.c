@@ -225,6 +225,7 @@ asmlinkage void sys_mysend(pid_t pid, unsigned int n, void* buf)
   msg->from_pid = current->tgid;
   msg->to_pid = pid;
   msg->msg_buf = kspace_buffer;
+  INIT_LIST_HEAD(&msg->msg_queue);
 
   // Enqueue the message
   if (enqueue_kmailbox_msg(msg) < 0)

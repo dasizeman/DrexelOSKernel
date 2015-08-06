@@ -13,10 +13,17 @@ int main(int argc, char** argv)
   pid_t child;
 
   if ((child = fork()) == 0)
-    while (1) sleep(1);
-
-  mysend(child, strlen(str), str);
-
+  {
+    char *recvstring = (char*)malloc(100);
+    int res;
+    res = myreceive(-1, strlen(str), recvstring);
+    //printf("%s\n", recvstring);
+    printf("Tried myreceive, got %d\n", res);
+  }
+  else
+  {
+    mysend(child, strlen(str), str);
+  }
 
   return 0;
 }
