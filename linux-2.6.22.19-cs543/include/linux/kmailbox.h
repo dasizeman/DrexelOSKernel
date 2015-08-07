@@ -26,7 +26,7 @@ int enqueue_kmailbox_msg(struct kmailbox_msg *msg);
  * Return:
  * 0 on success, -1 on failure
  */
-int dequeue_kmailbox_msg(struct kmailbox_msg **msg);
+int dequeue_kmailbox_msg(struct kmailbox_msg **msg, pid_t to);
 
 /**
  * Get the next available message to the specified
@@ -36,4 +36,4 @@ int dequeue_kmailbox_msg(struct kmailbox_msg **msg);
  * Return:
  * 0 on success, -1 on failure
  */
-int dequeue_kmailbox_msg_pid(struct kmailbox_msg **msg, pid_t to);
+int dequeue_kmailbox_msg_pid(struct kmailbox_msg **msg, pid_t to, pid_t from);

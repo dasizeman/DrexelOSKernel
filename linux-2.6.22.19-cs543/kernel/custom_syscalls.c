@@ -242,12 +242,12 @@ asmlinkage unsigned int sys_myreceive(pid_t pid, unsigned int n, void* buf)
 
   if ((int)pid > 0)
   {
-    if (dequeue_kmailbox_msg_pid(&recvd_message, pid) < 0)
+    if (dequeue_kmailbox_msg_pid(&recvd_message, current->tgid, pid) < 0)
       return 0;
   }
   else
   {
-    if (dequeue_kmailbox_msg(&recvd_message) < 0)
+    if (dequeue_kmailbox_msg(&recvd_message, current->tgid) < 0)
       return 0;
   }
 

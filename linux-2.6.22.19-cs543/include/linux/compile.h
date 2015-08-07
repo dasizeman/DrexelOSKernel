@@ -1,7 +1,7 @@
-/* This file is auto generated, version 34 */
+/* This file is auto generated, version 36 */
 #define UTS_MACHINE "x86_64"
-#define UTS_VERSION "#34 Thu Aug 6 18:14:59 EDT 2015"
-#define LINUX_COMPILE_TIME "18:14:59"
+#define UTS_VERSION "#36 Fri Aug 7 12:17:57 EDT 2015"
+#define LINUX_COMPILE_TIME "12:17:57"
 #define LINUX_COMPILE_BY "das433"
 #define LINUX_COMPILE_HOST "tux64-11.cs.drexel.edu"
 #define LINUX_COMPILE_DOMAIN "cs.drexel.edu"

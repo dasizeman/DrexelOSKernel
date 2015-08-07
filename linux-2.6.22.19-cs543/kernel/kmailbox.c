@@ -25,47 +25,23 @@ int enqueue_kmailbox_msg(struct kmailbox_msg *msg)
   return 0;
 }
 
-int dequeue_kmailbox_msg(struct kmailbox_msg **msg)
+int dequeue_kmailbox_msg(struct kmailbox_msg **msg, pid_t to)
 {
 
   unsigned long flags;
   spin_lock_irqsave(&sp_lock, flags);
 
-  if (kmailbox_queue.next == &kmailbox_queue)
-  {
-    spin_unlock_irqrestore(&sp_lock,flags);
-    return -1;
-  }
-  struct list_head *to_remove = NULL;
-  to_remove = kmailbox_queue.next;
-  *msg = list_entry(to_remove, struct kmailbox_msg, msg_queue);
-
-  printk("Dequeueing:\n");
-  printk("from_pid: %d\n", (*msg)->from_pid);
-  printk("to_pid: %d\n", (*msg)->to_pid);
-  printk("message: %s\n", (*msg)->msg_buf);
-
-  list_del(to_remove);
-
-  spin_unlock_irqrestore(&sp_lock,flags);
-  return 0;
-}
-
-
-int dequeue_kmailbox_msg_pid(struct kmailbox_msg **msg, pid_t to)
-{
-
-  unsigned long flags;
-  spin_lock_irqsave(&sp_lock, flags);
-
-  struct list_head *found = NULL;
+  struct list_head *found = NULL, *tmp = NULL;
   struct kmailbox_msg *found_entry = NULL;
 
-  list_for_each(found, &kmailbox_queue)
+  list_for_each_safe(found, tmp, &kmailbox_queue)
   {
-    found_entry = list_entry(found, struct kmailbox_msg, msg_queue);
-    if (found_entry->to_pid == to)
-      break;
+    struct kmailbox_msg *this_entry = list_entry(found, struct kmailbox_msg, msg_queue);
+    if (this_entry->to_pid == to && NULL == found_entry)
+    {
+      found_entry = this_entry;
+      list_del(found);
+    }
   }
 
   if (NULL == found_entry)
@@ -75,7 +51,47 @@ int dequeue_kmailbox_msg_pid(struct kmailbox_msg **msg, pid_t to)
   }
   *msg = found_entry;
 
-  list_del(found);
+  printk("Dequeueing:\n");
+  printk("from_pid: %d\n", (*msg)->from_pid);
+  printk("to_pid: %d\n", (*msg)->to_pid);
+  printk("message: %s\n", (*msg)->msg_buf);
+
+
+  spin_unlock_irqrestore(&sp_lock,flags);
+  return 0;
+}
+
+
+int dequeue_kmailbox_msg_pid(struct kmailbox_msg **msg, pid_t to, pid_t from)
+{
+
+  unsigned long flags;
+  spin_lock_irqsave(&sp_lock, flags);
+
+  struct list_head *found = NULL, *tmp = NULL;
+  struct kmailbox_msg *found_entry = NULL;
+
+  list_for_each_safe(found, tmp, &kmailbox_queue)
+  {
+    struct kmailbox_msg *this_entry = list_entry(found, struct kmailbox_msg, msg_queue);
+    if (this_entry->to_pid == to && this_entry->from_pid == from && NULL == found_entry)
+    {
+      found_entry = this_entry;
+      list_del(found);
+    }
+  }
+
+  if (NULL == found_entry)
+  {
+    spin_unlock_irqrestore(&sp_lock,flags);
+    return -1;
+  }
+  *msg = found_entry;
+
+  printk("Dequeueing:\n");
+  printk("from_pid: %d\n", (*msg)->from_pid);
+  printk("to_pid: %d\n", (*msg)->to_pid);
+  printk("message: %s\n", (*msg)->msg_buf);
 
   spin_unlock_irqrestore(&sp_lock,flags);
   return 0;

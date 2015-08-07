@@ -11,15 +11,19 @@ int main(int argc, char** argv)
   strcpy(str, "This is a test message!");
 
   pid_t child;
+  pid_t parent = getpid();
 
   if ((child = fork()) == 0)
   {
     char *recvstring = (char*)malloc(100);
-    int res;
-    res = myreceive(-1, strlen(str), recvstring);
-    printf("Tried myreceive, got %d\n", res);
-    if (res > 0)
-      printf("%s\n", recvstring);
+    int res = 0;
+    while (res <= 0)
+    {
+      res = myreceive(parent, strlen(str), recvstring);
+      if (res > 0)
+        printf("%s\n", recvstring);
+    }
+    return 0;
   }
   else
   {
