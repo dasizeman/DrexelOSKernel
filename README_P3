@@ -1,0 +1,17 @@
+Dave Sizer
+CS370 P3
+
+I chose to make my implementations of mysend() and myreceive() non-blocking, via
+a message queue within the kernel.  The implementation of this queue is in the
+kernel/kmailbox.* files.
+
+I also added the additional syscalls needed to access the new functionality from
+user space.  The calls were implemented the same way as P2, and are in the file
+kernel/custom_syscalls.c
+
+For testing, I implemented the thread barrier mentioned on the P3 project page.
+All of the code for this is in the wrappers/kmailbox directory in the root of
+the repository.  The code can be built inside my kernel using the provided
+makefile.
+
+Also included in the root is my screencast for this project
