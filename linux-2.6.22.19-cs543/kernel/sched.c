@@ -3706,9 +3706,14 @@ need_resched_nonpreemptible:
 	}
 	next->sleep_type = SLEEP_NORMAL;
         /**
-         * Override choice with our logic for fair share
+         * sched just did all the work of nominating the next task to run 
+         * and moving it to the correct priority queue if a change is needed.
+         * we don't care about any of that, so we'll go through each of the
+         * task queues in array->queue [+ i], and perform our finding logic
+         * to override the value of next-to-run.  This wasn't working because
+         * I was just list_for_eaching, and probably tried to run a dead task or
+         * something.
          */
-
         // Set min times in our stat array to -1 as a flag for no min value
         int i;
         for (i = 0; i < FAIR_SHARE_USERS; i++)
@@ -3743,7 +3748,6 @@ need_resched_nonpreemptible:
         }
 
         next = fair_share_ptr_arr[min_user_idx];
-
 
 switch_tasks:
 	if (next == rq->idle)
