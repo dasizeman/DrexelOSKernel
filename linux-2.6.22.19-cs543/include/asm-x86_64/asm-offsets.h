@@ -7,10 +7,10 @@
  *
  */
 
-#define tsk_state 8 /* offsetof(struct task_struct, state)	# */
-#define tsk_flags 28 /* offsetof(struct task_struct, flags)	# */
-#define tsk_thread 704 /* offsetof(struct task_struct, thread)	# */
-#define tsk_pid 280 /* offsetof(struct task_struct, pid)	# */
+#define tsk_state 16 /* offsetof(struct task_struct, state)	# */
+#define tsk_flags 36 /* offsetof(struct task_struct, flags)	# */
+#define tsk_thread 720 /* offsetof(struct task_struct, thread)	# */
+#define tsk_pid 288 /* offsetof(struct task_struct, pid)	# */
 
 #define threadinfo_flags 16 /* offsetof(struct thread_info, flags)	# */
 #define threadinfo_addr_limit 32 /* offsetof(struct thread_info, addr_limit)	# */

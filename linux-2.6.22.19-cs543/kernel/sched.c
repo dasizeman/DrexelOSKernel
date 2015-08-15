@@ -528,6 +528,18 @@ static int show_schedstat(struct seq_file *seq, void *v)
 	return 0;
 }
 
+/** This static 2d array will hold total user runtimes as well
+ *  as next-to-run pid information for the fair share scheduler.
+ *  fair_share_stat_arr[uid][0] is the total user runtime.
+ *  fair_share_stat_arr[uid][1] is used to hold the pid of the
+ *  process with the smallest runtime for scheduling.
+ *
+ *  This implementation only supports 100 users, but you can up
+ *  this if needed
+ */
+#define FAIR_SHARE_USERS 101
+static long fair_share_stat_arr[FAIR_SHARE_USERS][2];
+
 static int schedstat_open(struct inode *inode, struct file *file)
 {
 	unsigned int size = PAGE_SIZE * (1 + num_online_cpus() / 32);

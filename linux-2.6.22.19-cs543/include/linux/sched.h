@@ -822,6 +822,8 @@ struct task_struct {
 
         pid_t myjoin_pid;       /* For myjoin custom syscall */
 
+        long fairsched_total_time;  /* For the completely fair scheduler assignment */
+
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
 	void *stack;
 	atomic_t usage;
