@@ -16,6 +16,9 @@ obj-y += custom_syscalls.o
 # Build kernel mailbox module
 obj-y += kmailbox.o
 
+# Build fair scheduler utilities
+obj-y += fairsched.o
+
 obj-$(CONFIG_STACKTRACE) += stacktrace.o
 obj-y += time/
 obj-$(CONFIG_DEBUG_MUTEXES) += mutex-debug.o

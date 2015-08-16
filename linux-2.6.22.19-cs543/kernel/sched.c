@@ -53,6 +53,7 @@
 #include <linux/kprobes.h>
 #include <linux/delayacct.h>
 #include <linux/reciprocal_div.h>
+#include <linux/fairsched.h>
 
 #include <asm/tlb.h>
 #include <asm/unistd.h>
@@ -528,20 +529,6 @@ static int show_schedstat(struct seq_file *seq, void *v)
 	return 0;
 }
 
-/** This static 2d array will hold total user runtimes as well
- *  as next-to-run pid information for the fair share scheduler.
- *  fair_share_stat_arr[uid][0] is the total user runtime.
- *  fair_share_stat_arr[uid][1] is the minumum process time value
- *  for that user
- *  fair_share_stat_arr[uid][2] is a flag for if this user actually
- *  exists
- *
- *  This implementation only supports 100 users, but you can up
- *  this if needed
- */
-#define FAIR_SHARE_USERS 101
-static long fair_share_stat_arr[FAIR_SHARE_USERS][3];
-static struct task_struct* fair_share_ptr_arr[FAIR_SHARE_USERS];
 
 static int schedstat_open(struct inode *inode, struct file *file)
 {
@@ -3469,17 +3456,10 @@ static void task_running_tick(struct rq *rq, struct task_struct *p)
 		dequeue_task(p, rq->active);
 		set_tsk_need_resched(p);
 		p->prio = effective_prio(p);
-		p->time_slice = task_timeslice(p);
+                /** FAIRSCHED OVERRIDE **/
+		//p->time_slice = task_timeslice(p);
+                p->time_slice = fair_share_slice(p);
 		p->first_time_slice = 0;
-                /* Update the stats for this process and user
-                 * for the fair share scheduler. We are making
-                 * a small assumption here that the next time slice
-                 * the process would get assigned is the same as the
-                 * timeslice it just used.  Should be okay.
-                 */
-                long val = (long)task_timeslice(p);
-                fair_share_stat_arr[p->uid][0] += val;
-                p->fairsched_total_time += val;
 
 		if (!rq->expired_timestamp)
 			rq->expired_timestamp = jiffies;
@@ -3691,65 +3671,6 @@ need_resched_nonpreemptible:
 	idx = sched_find_first_bit(array->bitmap);
 	queue = array->queue + idx;
 	next = list_entry(queue->next, struct task_struct, run_list);
-        /**
-         * sched just did all the work of nominating the next task to run 
-         * and moving it to the correct priority queue if a change is needed.
-         * we don't care about any of that, so we'll go through each of the
-         * task queues in array->queue [+ i], and perform our finding logic
-         * to override the value of next-to-run.  This wasn't working because
-         * I was just list_for_eaching, and probably tried to run a dead task or
-         * something.
-         */
-        // Set min times in our stat array to -1 as a flag for no min value
-        int i;
-        for (i = 0; i < FAIR_SHARE_USERS; i++)
-          fair_share_stat_arr[i][1] = -1;
-
-        for (i = 0; i < MAX_PRIO; i++)
-        {
-          queue = array->queue + i;
-          struct task_struct *fs_task = NULL;
-          list_for_each_entry(fs_task, queue, run_list)
-          {
-
-            // Flag this process' user as existing in the stat arr
-            fair_share_stat_arr[fs_task->uid][2] = 1;
-
-            if (fs_task->time_slice <= 0)
-              continue;
-
-            long this_task_current_min = fair_share_stat_arr[fs_task->uid][1];
-            if (this_task_current_min == -1 || 
-                fs_task->fairsched_total_time < this_task_current_min)
-            {
-              fair_share_ptr_arr[fs_task->uid] = fs_task;
-              fair_share_stat_arr[fs_task->uid][1] = fs_task->fairsched_total_time;
-            }
-          }
-        }
-        // At this point, the ptr array has the task ptrs with minimum times
-        // for each uid.  Just take the pid corresponding to the uid
-        // with the lowest time, and run it.
-
-        long min_user_time = -1;
-        int min_user_idx = 0;
-        for (i = 0; i < FAIR_SHARE_USERS; i++)
-        {
-          if (fair_share_stat_arr[i][2] == 0)
-            continue;
-
-          if (min_user_time == -1 ||
-              fair_share_stat_arr[i][0] < min_user_time)
-          {
-            min_user_time = fair_share_stat_arr[i][0];
-            min_user_idx = i;
-          }
-        }
-
-        printk("Nominating pid %d: total time %d and timeslice %d\n", next->tgid, next->fairsched_total_time, next->time_slice);
-        next = fair_share_ptr_arr[min_user_idx];
-
-        /** END FAIR SHARE CODE **/
 
 	if (!rt_task(next) && interactive_sleep(next->sleep_type)) {
 		unsigned long long delta = now - next->timestamp;
