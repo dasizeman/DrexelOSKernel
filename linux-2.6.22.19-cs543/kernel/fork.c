@@ -1040,7 +1040,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 
         /* For myjoin custom syscall */
         p->myjoin_pid = 0;
-        p->fairsched_total_time = 0;
 
 	p->utime = cputime_zero;
 	p->stime = cputime_zero;
