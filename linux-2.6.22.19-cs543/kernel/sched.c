@@ -53,7 +53,6 @@
 #include <linux/kprobes.h>
 #include <linux/delayacct.h>
 #include <linux/reciprocal_div.h>
-#include <linux/fairsched.h>
 
 #include <asm/tlb.h>
 #include <asm/unistd.h>
@@ -528,7 +527,6 @@ static int show_schedstat(struct seq_file *seq, void *v)
 	}
 	return 0;
 }
-
 
 static int schedstat_open(struct inode *inode, struct file *file)
 {
@@ -1040,11 +1038,6 @@ out:
  */
 static void deactivate_task(struct task_struct *p, struct rq *rq)
 {
-        if (!p)
-          printk("NULL task passed to deactivate task!!!!\n");
-        if (!rq)
-          printk("NULL rq passed to deactivate task!!!!\n");
-
 	dec_nr_running(p, rq);
 	dequeue_task(p, p->array);
 	p->array = NULL;
@@ -3456,9 +3449,7 @@ static void task_running_tick(struct rq *rq, struct task_struct *p)
 		dequeue_task(p, rq->active);
 		set_tsk_need_resched(p);
 		p->prio = effective_prio(p);
-                /** FAIRSCHED OVERRIDE **/
-		//p->time_slice = task_timeslice(p);
-                p->time_slice = fair_share_slice(p);
+		p->time_slice = task_timeslice(p);
 		p->first_time_slice = 0;
 
 		if (!rq->expired_timestamp)
@@ -3690,7 +3681,6 @@ need_resched_nonpreemptible:
 		}
 	}
 	next->sleep_type = SLEEP_NORMAL;
-
 switch_tasks:
 	if (next == rq->idle)
 		schedstat_inc(rq, sched_goidle);

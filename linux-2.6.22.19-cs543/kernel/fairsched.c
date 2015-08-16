@@ -3,7 +3,7 @@ static unsigned int num_users;
 static unsigned int fair_share_stat_arr[FAIR_SHARE_USERS];
 
 
-static void update_data()
+unsigned int fair_share_slice(struct task_struct *p)
 {
   struct task_struct *ptr = NULL;
   num_users = 0;
@@ -15,22 +15,22 @@ static void update_data()
 
   for_each_process(ptr)
   {
-    if (fair_share_stat_arr[ptr->uid] == 0) num_users++;
-    fair_share_stat_arr[ptr->uid]++;
+    if (fair_share_stat_arr[ptr->euid] == 0) num_users++;
+    fair_share_stat_arr[ptr->euid]++;
   }
+  if (!num_users || !fair_share_stat_arr[p->euid])
+    return SLICE_CONSTANT;
 
+  unsigned int processes = fair_share_stat_arr[p->euid];
 
-}
+  unsigned int ts = (SLICE_CONSTANT / num_users) / processes; 
+  //printk("%d users, %d procs for user %d, giving timeslice %d\n", num_users, processes, p->euid, ts);
+  return ts;
 
-unsigned int fair_share_slice(struct task_struct *p)
-{
-  update_data();
-  return (unsigned int)((SLICE_CONSTANT / num_users) / fair_share_stat_arr[p->uid]);
 }
 
 int generate_stat_buffer(char *buffer)
 {
-  update_data();
   // A line for each user
   char *final;
   char *lines = (char*)kmalloc((num_users) * sizeof(char*), GFP_KERNEL);
