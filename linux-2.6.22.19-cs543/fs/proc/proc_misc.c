@@ -46,6 +46,7 @@
 #include <linux/vmalloc.h>
 #include <linux/crash_dump.h>
 #include <linux/pid_namespace.h>
+#include <linux/fairsched.h>
 #include <asm/uaccess.h>
 #include <asm/pgtable.h>
 #include <asm/io.h>
@@ -737,6 +738,55 @@ static int execdomains_read_proc(char *page, char **start, off_t off,
 	return proc_calc_metrics(page, start, off, count, eof, len);
 }
 
+
+static int fairshare_read_proc(char *page, char **start, off_t off,
+				 int count, int *eof, void *data)
+{
+    struct task_struct *ptr = NULL;
+    unsigned int fair_share_stat_arr[FAIR_SHARE_USERS] = {0};
+    unsigned int num_users = 0;
+
+    int i;
+
+    for (i=0; i < FAIR_SHARE_USERS; i++)
+      fair_share_stat_arr[i] = 0;
+
+    for_each_process(ptr)
+    {
+      if (fair_share_stat_arr[ptr->euid] == 0) num_users++;
+      fair_share_stat_arr[ptr->euid]++;
+    }
+    int buff_total = 0;
+
+    // A line for each user
+    char *first = (char*)kmalloc(300, GFP_KERNEL);
+    char **lines = (char**)kmalloc((num_users) * sizeof(char*), GFP_KERNEL);
+    unsigned int user_time = SLICE_CONSTANT / num_users;
+    buff_total += sprintf(first, "Time for each user: %d\n", user_time);
+    
+    
+    int idx = 0;
+    for (i = 0; i < FAIR_SHARE_USERS; i++)
+    {
+      if (fair_share_stat_arr[i] == 0)
+        continue;
+
+      unsigned int numprocs = fair_share_stat_arr[i];
+      unsigned int proctime = user_time / numprocs;
+      lines[idx] = kmalloc(300, GFP_KERNEL);
+      buff_total += sprintf(lines[idx], "\nUser:%d\nRunning %d processes\nProcess time slice: %d\n", i, numprocs, proctime);
+      idx++;
+    }
+
+    strcat(page, first);
+    for (i = 0; i < idx; i++)
+    {
+      strcat(page, lines[i]);
+    }
+
+    return proc_calc_metrics(page, start, off, count, eof, buff_total);
+}
+
 #ifdef CONFIG_MAGIC_SYSRQ
 /*
  * writing 'C' to /proc/sysrq-trigger is like sysrq-C
@@ -789,6 +839,7 @@ void __init proc_misc_init(void)
 		{"cmdline",	cmdline_read_proc},
 		{"locks",	locks_read_proc},
 		{"execdomains",	execdomains_read_proc},
+                {"fairshare",   fairshare_read_proc},
 		{NULL,}
 	};
 	for (p = simple_ones; p->name; p++)

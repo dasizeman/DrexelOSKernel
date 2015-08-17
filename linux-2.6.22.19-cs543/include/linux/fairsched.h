@@ -5,3 +5,4 @@
 #define SLICE_CONSTANT 500
 
 unsigned int fair_share_slice(struct task_struct *p);
+
