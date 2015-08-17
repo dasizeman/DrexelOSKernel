@@ -742,46 +742,67 @@ static int execdomains_read_proc(char *page, char **start, off_t off,
 static int fairshare_read_proc(char *page, char **start, off_t off,
 				 int count, int *eof, void *data)
 {
-    struct task_struct *ptr = NULL;
-    unsigned int fair_share_stat_arr[FAIR_SHARE_USERS] = {0};
-    unsigned int num_users = 0;
+  struct task_struct *ptr = NULL;
+  unsigned int fair_share_stat_arr[FAIR_SHARE_USERS][2] = {{0,0}};
+  unsigned int num_users = 0;
 
-    int i;
+  int i;
 
-    for (i=0; i < FAIR_SHARE_USERS; i++)
-      fair_share_stat_arr[i] = 0;
+  //for (i=0; i < FAIR_SHARE_USERS; i++)
+    //fair_share_stat_arr[i] = 0;
 
-    for_each_process(ptr)
+  unsigned int useridx;
+  unsigned int arr_end = 0;
+
+  for_each_process(ptr)
+  {
+    // Search for this user in our array (or where they will go)
+    for (i = 0; i <= arr_end; i++)
     {
-      if (fair_share_stat_arr[ptr->euid] == 0) num_users++;
-      fair_share_stat_arr[ptr->euid]++;
+      useridx = i;
+      if (fair_share_stat_arr[i][1] == ptr->euid)
+        break;
     }
+
+    if (useridx == arr_end)
+    {
+      arr_end++;
+      num_users++;
+    }
+    fair_share_stat_arr[useridx][0]++;
+    fair_share_stat_arr[useridx][1] = ptr->euid;
+  }
+
+    printk("Found %d users\n", num_users);
     int buff_total = 0;
 
     // A line for each user
-    char *first = (char*)kmalloc(300, GFP_KERNEL);
-    char **lines = (char**)kmalloc((num_users) * sizeof(char*), GFP_KERNEL);
+    char first[300];
+    char *lines[num_users];
     unsigned int user_time = SLICE_CONSTANT / num_users;
     buff_total += sprintf(first, "Time for each user: %d\n", user_time);
     
     
-    int idx = 0;
-    for (i = 0; i < FAIR_SHARE_USERS; i++)
+    for (i = 0; i < num_users; i++)
     {
-      if (fair_share_stat_arr[i] == 0)
-        continue;
+      unsigned int numprocs = fair_share_stat_arr[i][0];
+      unsigned int proctime;
+      if (numprocs <= 0)
+        proctime = 0;
+      else
+        proctime = user_time / numprocs;
 
-      unsigned int numprocs = fair_share_stat_arr[i];
-      unsigned int proctime = user_time / numprocs;
-      lines[idx] = kmalloc(300, GFP_KERNEL);
-      buff_total += sprintf(lines[idx], "\nUser:%d\nRunning %d processes\nProcess time slice: %d\n", i, numprocs, proctime);
-      idx++;
+      char* thisline = kmalloc(300, GFP_KERNEL);
+
+      lines[i] = thisline;
+      buff_total += sprintf(thisline, "\nUser:%d\nRunning %d processes\nProcess time slice: %d\n", fair_share_stat_arr[i][1], numprocs, proctime);
     }
 
     strcat(page, first);
-    for (i = 0; i < idx; i++)
+    for (i = 0; i < num_users; i++)
     {
       strcat(page, lines[i]);
+      kfree(lines[i]);
     }
 
     return proc_calc_metrics(page, start, off, count, eof, buff_total);
