@@ -1,12 +1,11 @@
 #include <linux/fairsched.h>
-static unsigned int num_users;
-static unsigned int fair_share_stat_arr[FAIR_SHARE_USERS];
 
 
 unsigned int fair_share_slice(struct task_struct *p)
 {
   struct task_struct *ptr = NULL;
-  num_users = 0;
+  unsigned int fair_share_stat_arr[FAIR_SHARE_USERS] = {0};
+  unsigned int num_users = 0;
 
   int i;
 
@@ -29,6 +28,7 @@ unsigned int fair_share_slice(struct task_struct *p)
 
 }
 
+/*
 int generate_stat_buffer(char *buffer)
 {
   // A line for each user
@@ -54,3 +54,4 @@ int generate_stat_buffer(char *buffer)
   buffer = final;
   return strlen(final);
 }
+*/
