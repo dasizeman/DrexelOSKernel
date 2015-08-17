@@ -1,0 +1,22 @@
+Dave Sizer
+CS370 P4
+
+For this project implemented a "fair share scheduler", that tried to divide time
+slice between users and the processes that the user is running.  I also tried to
+create a /proc entry to display some stats about the scheduler.
+
+The new scheduling code for the scheduler is contained in my own new files,
+kernel/fairsched.c and include/linux/fairsched.h.  I call into my new code from
+the task_timeslice function in kernel/sched.c.  The scheduler correctly counts
+users from the list of tasks, as well as the number of processes that each user
+is running, and tries to set the timeslice accordingly.
+
+I tested the scheduler by creating a new user, and running several infinite loop
+programs in the background as each of three users (root, dave, and user) and
+observing the CPU behavior in top.  I am not sure really what to make of the
+results, they do not seem as pronounced in the user division as I had expected,
+but time is defininitely getting split between processes.
+
+As for the /proc entry, my edits were made to fs/proc/proc_misc.c.  The logic in
+there creates various stats, but I was limited by this "old" way of doing a
+/proc entry, so the output cuts off at 4096 bytes.

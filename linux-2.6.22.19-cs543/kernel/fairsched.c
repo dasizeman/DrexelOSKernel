@@ -5,19 +5,16 @@
 unsigned int fair_share_slice(struct task_struct *p)
 {
   /**
-   * Our stat arr of the form [x][y].  y holds the actual uid
-   * we will use variables to represent how much of the arr is
-   * actually used (could use a linked list I guess), and also 
-   * flag the idx of the user for the current task struct */
+   * fair_share_time_slice[i][0] is the number of procs
+   * for a user
+   * fair_share_time_slice[i][1] is the uid
+   */
 
   struct task_struct *ptr = NULL;
   unsigned int fair_share_stat_arr[FAIR_SHARE_USERS][2] = {{0,0}};
   unsigned int num_users = 0;
 
   int i;
-
-  //for (i=0; i < FAIR_SHARE_USERS; i++)
-    //fair_share_stat_arr[i] = 0;
 
   unsigned int useridx, thisprocidx;
   unsigned int arr_end = 0;

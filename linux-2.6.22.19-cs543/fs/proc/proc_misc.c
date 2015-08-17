@@ -748,9 +748,6 @@ static int fairshare_read_proc(char *page, char **start, off_t off,
 
   int i;
 
-  //for (i=0; i < FAIR_SHARE_USERS; i++)
-    //fair_share_stat_arr[i] = 0;
-
   unsigned int useridx;
   unsigned int arr_end = 0;
 
