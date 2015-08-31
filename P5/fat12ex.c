@@ -13,21 +13,9 @@ int main(int argc, char **argv)
   else
     printf("Opened file.\n");
 
-  struct fat12_bs *bootsector = NULL;
+  struct fat12 *image = NULL;
 
-  int res;
-  res = fat12_init(&binfile, &bootsector);
+  image = fat12_init(binfile);
 
-  if (res < 0)
-  {
-    printf("Bootsector read failed!\n");
-    return 1;
-  }
-  else
-    printf("Successfully read bootsector!\n");
-  
-  printf("Volume label: %.*s\n",(int)sizeof(bootsector->bsVolumeLabel), 
-      bootsector->bsVolumeLabel);
-  printf("Volume serial: %1X\n", bootsector->bsSerialNumber);
-
+  print_disk_information(image->bs);
 }
