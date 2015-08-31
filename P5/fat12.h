@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define BOOTSECTOR_LENGTH 512
 #define DIRENTRY_SIZE     32
@@ -29,25 +30,22 @@ struct fat12 *fat12_init(FILE *file);
 /**
  * Read a FAT12 root directory into the corrosponding structures
  * file - The file pointer to the image
- * offset - The offset of the root directory in the file
+ * image - The associated fat12 struct
+ * count - Where the number of actual read entries will be stored
  * Returns - An array of directory entry structures
  */
-struct fat12_direntry **read_root_directory(FILE *file, uint32_t offset);
+struct fat12_direntry **read_root_directory(FILE *file, struct fat12 *image);
 
 /**
  * Read a FAT12 directory into the corrosponding structures
  * data - A pointer to the directory data
- * size - The size of the directory data
+ * rootentries - The maximum number of directory entries.  Only used when reading the
+ * root directory.
+ * count - Where the number of actual read entries will be stored
  * Returns - An array of directory entry structures
  */
-struct fat12_direntry **read_fat12_directory(uint8_t *data, uint32_t size);
+struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries, uint16_t *count);
 
-/**
- * Read a FAT12 directory entry into the corrosponding structure
- * entry - A pointer to the entry data
- * Returns - A pointer to a directory entry structure
- */
-struct fat12_direntry *read_directory_entry(uint8_t *entry);
 
 /**
  * Read a file from a FAT12 image into a buffer using the FAT
@@ -85,12 +83,20 @@ void print_disk_information(struct fat12_bs *bootsector);
 void print_directory_entry(struct fat12_direntry *dir);
 
 /**
+ * Unpack a 16-bit FAT12 time word and return a formatted string
+ * packed - The time word
+ * Returns: The formatted time string
+ */
+char *unpack_fat12_time(uint16_t packed);
+
+/**
  * Structure for a FAT12 session
  */
 struct fat12
 {
   struct fat12_bs *bs;
   struct fat12_direntry **rootEntries;
+  uint16_t numRootEntries;
   uint32_t FATPos;
   uint32_t rootPos;
   uint32_t dataPos;

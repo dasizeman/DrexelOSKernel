@@ -35,23 +35,97 @@ struct fat12 *fat12_init(FILE *file)
   fatptr->FATPos = (BOOTSECTOR_LENGTH+1);
   fatptr->rootPos = calculate_root_position(bs);
   fatptr->dataPos = calculate_data_position(bs);
+  fatptr->numRootEntries = 0;
   
-  fatptr->rootEntries = read_root_directory(file, fatptr->rootPos);
+  fatptr->rootEntries = read_root_directory(file, fatptr);
 
   return fatptr;
 
 }
 
 
-struct fat12_direntry **read_root_directory(FILE *file, uint32_t offset)
+struct fat12_direntry **read_root_directory(FILE *file, struct fat12 *image)
 {
- //TODO
- return NULL;
+  // Recalculate root sectors
+  uint16_t bps;
+  bps = image->bs->bpbBytesPerSector;
+  uint16_t root_sectors = image->bs->bpbRootEntries * DIRENTRY_SIZE / bps;
+  size_t size = root_sectors*bps;
+
+  // Allocate a buffer for the directory data
+  uint8_t *buffer = NULL;
+  if (!(buffer = malloc(size)))
+  {
+    fprintf(stderr, "read_root_directory: allocation failure\n");
+    return NULL;
+  }
+
+  // Seek to the root directory
+  fseek(file, image->rootPos, SEEK_SET);
+
+  // Read into the buffer
+  if (!fread(buffer, size, 1, file))
+  {
+    fprintf(stderr, "read_root_directory: read failed\n");
+    return NULL;
+  }
+
+  struct fat12_direntry **dirs = read_fat12_directory(buffer, image->bs->bpbRootEntries, &(image->numRootEntries));
+  free(buffer);
+
+  //printf("Buffer dump:\n");
+  //int i;
+  //for (i=0; i < 100; i++)
+    //printf("%02X ", buffer[i]);
+
+  return dirs;
 }
 
-struct fat12_direntry **read_fat12_directory(uint8_t *data, uint32_t size)
+struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries, uint16_t *count)
 {
-  //TODO
+  // NOTE:
+  // This will only work for root directories right now.  For real directories
+  // we will allocate in cluster-sized intervals.  
+
+  int idx = 0;
+
+  // Allocate our pointers
+  struct fat12_direntry **dirs = NULL;
+  if (!(dirs = malloc(rootentries * sizeof(struct fat12_direntry*))))
+  {
+    fprintf(stderr, "read_fat12_directory: failed allocating pointers");
+    return NULL;
+  }
+
+  // Copy until we hit the end or unused space
+  while (*data != 0)
+  {
+    if (*data == 0xE5) // Deleted entry
+    {
+      data += DIRENTRY_SIZE;
+      continue;
+    }
+
+    // Allocate an entry structure
+    struct fat12_direntry *entry = NULL;
+    if (!(entry = malloc(sizeof *entry)))
+    {
+      fprintf(stderr, 
+          "read_fat12_directory: failed allocating directory structure\n");
+      return NULL;
+    }
+    
+    // Copy into the structure (I suppose we could read directly in this loop if
+    // we wanted)
+
+    dirs[idx] = memcpy(entry, data, DIRENTRY_SIZE);
+
+    (*count)++;
+    idx++;
+    data += DIRENTRY_SIZE;
+  }
+
+  return dirs;
 }
 
 struct fat12_direntry *read_directory_entry(uint8_t *entry)
@@ -86,7 +160,9 @@ uint32_t calculate_data_position(struct fat12_bs *bs)
 
 void print_directory_entry(struct fat12_direntry *dir)
 {
-  // TODO
+  printf("%10.*s", 8, dir->filename);
+  printf("%5.*s\n", 3, dir->ext);
+
 }
 
 void print_disk_information(struct fat12_bs *bootsector)
@@ -95,4 +171,11 @@ void print_disk_information(struct fat12_bs *bootsector)
           bootsector->bsVolumeLabel);
 
   printf("Volume serial: %1X\n", bootsector->bsSerialNumber);
+}
+
+
+char *unpack_fat12_time(uint16_t packed)
+{
+
+  return NULL;
 }
