@@ -1,8 +1,13 @@
-EXNAME=fat12ex
+DIREXNAME=msdosdir
+EXTREXNAME=msdosextr
 
-all: ${EXNAME}
+all: ${DIREXNAME} ${EXTREXNAME}
 
-${EXNAME}: ${EXNAME}.c fat12.o
-	gcc -o ${EXNAME} $^
+${DIREXNAME}: ${DIREXNAME}.c fat12.o
+	gcc -o $@ $^
+
+${EXTREXNAME}: ${EXTREXNAME}.c fat12.o
+	gcc -o $@ $^
+
 fat12.o: fat12.c
 	gcc -c $^ -o $@

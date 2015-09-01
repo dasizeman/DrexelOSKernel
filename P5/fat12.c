@@ -32,10 +32,11 @@ struct fat12 *fat12_init(FILE *file)
 
   // Set struct values
   fatptr->bs = bs;
-  fatptr->FATPos = (BOOTSECTOR_LENGTH+1);
+  fatptr->FATPos = BOOTSECTOR_LENGTH;
   fatptr->rootPos = calculate_root_position(bs);
   fatptr->dataPos = calculate_data_position(bs);
   fatptr->numRootEntries = 0;
+  fatptr->totalRootSize = 0;
   
   fatptr->rootEntries = read_root_directory(file, fatptr);
 
@@ -44,12 +45,12 @@ struct fat12 *fat12_init(FILE *file)
 }
 
 
-struct fat12_direntry **read_root_directory(FILE *file, struct fat12 *image)
+struct fat12_direntry **read_root_directory(FILE *image, struct fat12 *fat)
 {
   // Recalculate root sectors
   uint16_t bps;
-  bps = image->bs->bpbBytesPerSector;
-  uint16_t root_sectors = image->bs->bpbRootEntries * DIRENTRY_SIZE / bps;
+  bps = fat->bs->bpbBytesPerSector;
+  uint16_t root_sectors = fat->bs->bpbRootEntries * DIRENTRY_SIZE / bps;
   size_t size = root_sectors*bps;
 
   // Allocate a buffer for the directory data
@@ -61,16 +62,16 @@ struct fat12_direntry **read_root_directory(FILE *file, struct fat12 *image)
   }
 
   // Seek to the root directory
-  fseek(file, image->rootPos, SEEK_SET);
+  fseek(image, fat->rootPos, SEEK_SET);
 
   // Read into the buffer
-  if (!fread(buffer, size, 1, file))
+  if (!fread(buffer, size, 1, image))
   {
     fprintf(stderr, "read_root_directory: read failed\n");
     return NULL;
   }
 
-  struct fat12_direntry **dirs = read_fat12_directory(buffer, image->bs->bpbRootEntries, &(image->numRootEntries));
+  struct fat12_direntry **dirs = read_fat12_directory(buffer, fat->bs->bpbRootEntries, &(fat->numRootEntries), &(fat->totalRootSize));
   free(buffer);
 
   //printf("Buffer dump:\n");
@@ -81,7 +82,7 @@ struct fat12_direntry **read_root_directory(FILE *file, struct fat12 *image)
   return dirs;
 }
 
-struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries, uint16_t *count)
+struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries, uint16_t *count, uint32_t *total)
 {
   // NOTE:
   // This will only work for root directories right now.  For real directories
@@ -114,13 +115,24 @@ struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries
           "read_fat12_directory: failed allocating directory structure\n");
       return NULL;
     }
+
     
     // Copy into the structure (I suppose we could read directly in this loop if
     // we wanted)
 
     dirs[idx] = memcpy(entry, data, DIRENTRY_SIZE);
 
+    // I'm not sure what zero filesize items mean but we probably don't want
+    // them
+    if (entry->filesize == 0)
+    {
+      free(entry);
+      data += DIRENTRY_SIZE;
+      continue;
+    }
+
     (*count)++;
+    (*total) += entry->filesize;
     idx++;
     data += DIRENTRY_SIZE;
   }
@@ -128,9 +140,54 @@ struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries
   return dirs;
 }
 
-uint8_t *read_fat12_file(struct fat12_direntry *dir)
+uint32_t extract_fat12_file(struct fat12_direntry *dir, struct fat12 *fat, FILE *image)
 {
- //TODO
+  uint32_t total_written = 0;
+
+  // Open the file for writing
+  char *outname = malloc(13);
+  sprintf(outname, "%.*s.%.*s", 8, dir->filename, 3, dir->ext);
+  FILE *outfile = fopen(outname, "w");
+
+  uint32_t remaining_to_write = dir->filesize;
+  uint16_t current_fat_index = dir->starting_cluster;
+
+  while(!(lookup_fat_entry(current_fat_index, fat, image) >= 0xFF8 
+        && lookup_fat_entry(current_fat_index, fat, image) <= 0xFFF))
+  {
+    printf("Current FAT index: %d\n", current_fat_index);
+
+    // Write the cluster at the current index
+    fseek(image, fat->dataPos, SEEK_SET);
+    fseek(image, 512*current_fat_index, SEEK_CUR);
+
+    uint8_t *buffer = malloc(512);
+    fread(buffer, 512, 1, image);
+    fwrite(buffer, 512, 1, outfile);
+    remaining_to_write -= 512;
+    total_written += 512;
+    free(buffer);
+
+    // Update the current fat index
+    current_fat_index = lookup_fat_entry(current_fat_index, fat, image);
+  }
+
+  printf("Current FAT index: %d\n", current_fat_index);
+
+  // Write any remaining bytes
+  fseek(image, fat->dataPos, SEEK_SET);
+  fseek(image, 512*current_fat_index, SEEK_CUR);
+
+  uint8_t *buffer = malloc(remaining_to_write);
+  fread(buffer, remaining_to_write, 1, image);
+  fwrite(buffer, remaining_to_write, 1, outfile);
+  total_written += remaining_to_write;
+  free(buffer);
+
+  fclose(outfile);
+
+  return total_written;
+
 }
 
 uint32_t calculate_root_position(struct fat12_bs *bs)
@@ -157,6 +214,7 @@ void print_directory_entry(struct fat12_direntry *dir)
 {
   printf("%10.*s", 8, dir->filename);
   printf("%5.*s", 3, dir->ext);
+  printf("%10d", dir->filesize);
   printf("%15s", unpack_fat12_date(dir->date));
   printf("%10s\n", unpack_fat12_time(dir->time));
 
@@ -195,22 +253,67 @@ char *unpack_fat12_date(uint16_t packed)
   return str;
 }
 
-uint16_t lookup_fat_entry(uint16_t idx)
+uint16_t lookup_fat_entry(uint16_t idx, struct fat12 *fat, FILE *image)
 {
-  // TODO
-  return 0;
+  // Seek to the FAT
+  fseek(image, fat->FATPos, SEEK_SET);
+
+  // Which 3-byte group is it in?
+  uint32_t bit_offset = 12 * idx;
+  uint16_t group_idx = bit_offset / 24;
+
+  // Seek to the correct 3-byte group
+  fseek(image, group_idx*3, SEEK_CUR);
+
+  // Read the bytes
+  uint8_t *bytes = malloc(3);
+  fread(bytes, 3, 1, image);
+
+  // Is this particular entry the first three nibbles or second?
+  return (bit_offset % 24 == 0)?first_12_bits(bytes):second_12_bits(bytes);
 
 }
 
 uint16_t first_12_bits(uint8_t *threebytes)
 {
-  // TODO
-  return 0;
+  // UV WX YZ = XUV YZW
+
+  uint8_t first = *threebytes;
+  uint8_t second = *(threebytes + 1);
+  uint8_t third = *(threebytes + 2);
+
+  uint16_t res = 0;
+
+  // XUV
+  res = ((second & 0xE) << 8) | first;
+
+  printf("First 12 bits: ");
+  int i;
+  for (i=0; i < 3; i++)
+    printf("%02X ", threebytes[i]);
+  printf("-> %d\n", res);
+
+  return res;
 }
 
 
 uint16_t second_12_bits(uint8_t *threebytes)
 {
-  // TODO
-  return 0;
+  // UV WX YZ = XUV YZW
+
+  uint8_t first = *threebytes;
+  uint8_t second = *(threebytes + 1);
+  uint8_t third = *(threebytes + 2);
+
+  uint16_t res = 0;
+
+  res = (third << 4) | ((second & 0xF0) >> 4);
+
+  printf("Second 12 bits: ");
+  int i;
+  for (i=0; i < 3; i++)
+    printf("%02X ", threebytes[i]);
+  printf("-> %d\n", res);
+
+  return res;
 }

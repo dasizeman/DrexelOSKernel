@@ -29,12 +29,11 @@ struct fat12 *fat12_init(FILE *file);
 
 /**
  * Read a FAT12 root directory into the corrosponding structures
- * file - The file pointer to the image
- * image - The associated fat12 struct
- * count - Where the number of actual read entries will be stored
+ * image - The file pointer to the image
+ * fat - The associated fat12 struct
  * Returns - An array of directory entry structures
  */
-struct fat12_direntry **read_root_directory(FILE *file, struct fat12 *image);
+struct fat12_direntry **read_root_directory(FILE *image, struct fat12 *fat);
 
 /**
  * Read a FAT12 directory into the corrosponding structures
@@ -42,18 +41,20 @@ struct fat12_direntry **read_root_directory(FILE *file, struct fat12 *image);
  * rootentries - The maximum number of directory entries.  Only used when reading the
  * root directory.
  * count - Where the number of actual read entries will be stored
+ * total - The total number of bytes taken up by files
  * Returns - An array of directory entry structures
  */
-struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries, uint16_t *count);
+struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries, uint16_t *count, uint32_t *total);
 
 
 /**
- * Read a file from a FAT12 image into a buffer using the FAT
- * file - The file pointer for the image file
- * dir  - A pointer to the directory entry structure for the file
- * Returns: A buffer containing the file data
+ * Write a FAT12 file from the image to the native filesystem
+ * dir - The directory entry structure for the file
+ * fat  - The fat structure for the image
+ * image - The file pointer for the image
+ * Returns: The number of bytes written
  */
-uint8_t *read_fat12_file(struct fat12_direntry *dir);
+uint32_t extract_fat12_file(struct fat12_direntry *dir, struct fat12 *fat, FILE *image);
 
 /**
  * Calculate the offset of the root directory in a FAT12 image using information
@@ -72,7 +73,7 @@ uint32_t calculate_data_position(struct fat12_bs *bs);
 
 /**
  * Print an overview of the FAT12 image.
- * image - The FAT12 struct in question
+ * bootsector - The image's bootsector structure
  */
 void print_disk_information(struct fat12_bs *bootsector);
 
@@ -99,9 +100,11 @@ char *unpack_fat12_date(uint16_t packed);
 /**
  * Get the value at the specified index in a 12-bit FAT.
  * idx - The index into the FAT
+ * fat - The associated fat12 structure
+ * image - The file pointer to the image
  * Return: The value at the index
  */
-uint16_t lookup_fat_entry(uint16_t idx);
+uint16_t lookup_fat_entry(uint16_t idx, struct fat12 *fat, FILE *image);
 
 
 /** Utils for silly 12-bit packing **/
@@ -130,6 +133,7 @@ struct fat12
 {
   struct fat12_bs *bs;
   struct fat12_direntry **rootEntries;
+  uint32_t totalRootSize;
   uint16_t numRootEntries;
   uint32_t FATPos;
   uint32_t rootPos;
