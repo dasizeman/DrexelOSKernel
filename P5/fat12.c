@@ -128,11 +128,6 @@ struct fat12_direntry **read_fat12_directory(uint8_t *data, uint16_t rootentries
   return dirs;
 }
 
-struct fat12_direntry *read_directory_entry(uint8_t *entry)
-{
- //TODO
-}
-
 uint8_t *read_fat12_file(struct fat12_direntry *dir)
 {
  //TODO
@@ -161,7 +156,9 @@ uint32_t calculate_data_position(struct fat12_bs *bs)
 void print_directory_entry(struct fat12_direntry *dir)
 {
   printf("%10.*s", 8, dir->filename);
-  printf("%5.*s\n", 3, dir->ext);
+  printf("%5.*s", 3, dir->ext);
+  printf("%15s", unpack_fat12_date(dir->date));
+  printf("%10s\n", unpack_fat12_time(dir->time));
 
 }
 
@@ -176,6 +173,44 @@ void print_disk_information(struct fat12_bs *bootsector)
 
 char *unpack_fat12_time(uint16_t packed)
 {
+  uint16_t hour = (packed & 0xF800) >> 11;
+  uint16_t minute = (packed & 0x7C0) >> 6;
+  uint16_t second = (packed & 0x10) * 2;
 
-  return NULL;
+  char *str = malloc(100);
+  sprintf(str, "%02d:%02d:%02d", hour, minute, second);
+
+  return str;
+}
+
+char *unpack_fat12_date(uint16_t packed)
+{
+  uint16_t year = ((packed & 0xFE00) >> 9) + 1980;
+  uint16_t month = (packed & 0x1E0) >> 5;
+  uint16_t day = (packed & 0x10) + 1;
+
+  char *str = malloc(100);
+  sprintf(str, "%02d-%02d-%d", month, day, year);
+
+  return str;
+}
+
+uint16_t lookup_fat_entry(uint16_t idx)
+{
+  // TODO
+  return 0;
+
+}
+
+uint16_t first_12_bits(uint8_t *threebytes)
+{
+  // TODO
+  return 0;
+}
+
+
+uint16_t second_12_bits(uint8_t *threebytes)
+{
+  // TODO
+  return 0;
 }

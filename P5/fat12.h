@@ -90,6 +90,40 @@ void print_directory_entry(struct fat12_direntry *dir);
 char *unpack_fat12_time(uint16_t packed);
 
 /**
+ * Unpack a 16-bit FAT12 date word and return a formatted string
+ * packed - The date word
+ * Returns: The formatted date string
+ */
+char *unpack_fat12_date(uint16_t packed);
+
+/**
+ * Get the value at the specified index in a 12-bit FAT.
+ * idx - The index into the FAT
+ * Return: The value at the index
+ */
+uint16_t lookup_fat_entry(uint16_t idx);
+
+
+/** Utils for silly 12-bit packing **/
+
+/**
+ * Return the value of the first twelve bits of a 3-byte segment as a 16bit
+ * unsigned int
+ * threebytes - A pointer to three little endian bytes
+ * Return: The value of the 12 bits as a 16 bit int
+ */
+uint16_t first_12_bits(uint8_t *threebytes);
+
+
+/**
+ * Return the value of the second twelve bits of a 3-byte segment as a 16bit
+ * unsigned int
+ * threebytes - A pointer to three little endian bytes
+ * Return: The value of the 12 bits as a 16 bit int
+ */
+uint16_t second_12_bits(uint8_t *threebytes);
+
+/**
  * Structure for a FAT12 session
  */
 struct fat12
