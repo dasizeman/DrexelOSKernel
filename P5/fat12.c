@@ -155,8 +155,6 @@ uint32_t extract_fat12_file(struct fat12_direntry *dir, struct fat12 *fat, FILE 
   while(!(lookup_fat_entry(current_fat_index, fat, image) >= 0xFF8 
         && lookup_fat_entry(current_fat_index, fat, image) <= 0xFFF))
   {
-    printf("Current FAT index: %d\n", current_fat_index);
-
     // Write the cluster at the current index
     fseek(image, fat->dataPos, SEEK_SET);
     fseek(image, 512*current_fat_index, SEEK_CUR);
@@ -171,8 +169,6 @@ uint32_t extract_fat12_file(struct fat12_direntry *dir, struct fat12 *fat, FILE 
     // Update the current fat index
     current_fat_index = lookup_fat_entry(current_fat_index, fat, image);
   }
-
-  printf("Current FAT index: %d\n", current_fat_index);
 
   // Write any remaining bytes
   fseek(image, fat->dataPos, SEEK_SET);
@@ -285,13 +281,7 @@ uint16_t first_12_bits(uint8_t *threebytes)
   uint16_t res = 0;
 
   // XUV
-  res = ((second & 0xE) << 8) | first;
-
-  printf("First 12 bits: ");
-  int i;
-  for (i=0; i < 3; i++)
-    printf("%02X ", threebytes[i]);
-  printf("-> %d\n", res);
+  res = ((second & 0xF) << 8) | first;
 
   return res;
 }
@@ -308,12 +298,6 @@ uint16_t second_12_bits(uint8_t *threebytes)
   uint16_t res = 0;
 
   res = (third << 4) | ((second & 0xF0) >> 4);
-
-  printf("Second 12 bits: ");
-  int i;
-  for (i=0; i < 3; i++)
-    printf("%02X ", threebytes[i]);
-  printf("-> %d\n", res);
 
   return res;
 }

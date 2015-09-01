@@ -17,13 +17,13 @@ int main(int argc, char **argv)
 
   fat = fat12_init(binfile);
 
-  //uint16_t samplecluster = (fat->rootEntries)[0]->starting_cluster;
-  //printf("Testing FAT index %d\n", 3);
-  //uint16_t fatval = lookup_fat_entry(3, fat, binfile);
-  //printf("Got value %d\n", fatval);
-  
-  struct fat12_direntry *sample = (fat->rootEntries)[0];
-  extract_fat12_file(sample, fat, binfile);
+  int i;
+  for (i = 0; i < fat->numRootEntries; i++)
+  {
+    struct fat12_direntry *this = (fat->rootEntries)[i];
+    printf("Extracting %.*s.%.*s...\n", 8, this->filename, 3, this->ext);
+    extract_fat12_file(this, fat, binfile);
+  }
   
 
   return 0;
