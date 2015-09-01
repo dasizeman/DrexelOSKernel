@@ -1,0 +1,17 @@
+Dave Sizer
+CS370 P5
+FAT12 Filesystem Reader
+
+For this project I created two utilities in C:
+
+msdosdir - Lists the root directory of a FAT12 disk image
+msdosextr - Extracts all files in the root directory of a FAT12 disk image to
+the local filesystem.
+
+The FAT12 implementation itself can be found in fat12.{c/h}, these two utilities
+make use of that implementation.
+
+There is a Makefile that will build both utilities for convenience.
+
+** Please note that currently the utilities are hardcoded to open the
+samplefat.bin file in the same directory.  This can be easily changed if needed.
